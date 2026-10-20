@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node.js CMS Dashboard</title>
+    <!-- Tailwind CSS untuk styling cepat -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <div class="container mx-auto p-6 max-w-4xl">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Node.js CMS & Firestore</h1>
+            <p class="text-gray-600">Dashboard Sederhana untuk Manajemen Konten</p>
+        </header>
+
+        <!-- Form Tambah Konten -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Tambah Postingan Baru</h2>
+            <form id="postForm" class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Judul</label>
+                    <input type="text" id="title" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Konten</label>
+                    <textarea id="content" rows="4" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Simpan Postingan</button>
+            </form>
+        </div>
+
+        <!-- Daftar Konten -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Daftar Postingan</h2>
+            <div id="postsList" class="space-y-4">
+                <p class="text-gray-500">Memuat data...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fungsi untuk mengambil dan merender postingan
+        async function fetchPosts() {
+            try {
+                const response = await fetch('/api/posts');
+                const posts = await response.json();
+                const container = document.getElementById('postsList');
+                
+                if (posts.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">Belum ada postingan.</p>';
+                    return;
+                }
+
+                container.innerHTML = posts.map(post => `
+                    <div class="border-b pb-4 mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
+                        <p class="text-gray-600 mt-1">${escapeHtml(post.content)}</p>
+                        <span class="text-xs text-gray-400 mt-2 block">Dibuat: ${new Date(post.createdAt).toLocaleString()}</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Gagal memuat post:', error);
+            }
+        }
+
+        // Fungsi handle submit form
+        document.getElementById('postForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, content })
+            });
+
+            if (response.ok) {
+                document.getElementById('postForm').reset();
+                fetchPosts(); // Refresh daftar post
+            } else {
+                alert('Gagal menyimpan postingan');
+            }
+        });
+
+        // Helper untuk mencegah XSS dasar
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Load data saat halaman dibuka
+        fetchPosts();
+    </script>
+</body>
+</html>
