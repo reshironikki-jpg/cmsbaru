@@ -86,7 +86,13 @@
                 document.getElementById('postForm').reset();
                 fetchPosts(); // Refresh daftar post
             } else {
-                alert('Gagal menyimpan postingan');
+                // Tampilkan pesan error asli dari server agar mudah dianalisis
+                let msg = `HTTP ${response.status}`;
+                try {
+                    const err = await response.json();
+                    if (err && err.error) msg = err.error;
+                } catch (_) { /* respons bukan JSON, pakai status saja */ }
+                alert('Gagal menyimpan postingan: ' + msg);
             }
         });
 
