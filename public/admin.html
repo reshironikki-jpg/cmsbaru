@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Node.js CMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+
+    <div class="container mx-auto p-6 max-w-4xl">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Area Admin</h1>
+                <p class="text-gray-600">Kelola dan atur publikasi postingan</p>
+            </div>
+            <a href="/" class="text-sm bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition">Lihat Halaman Publik</a>
+        </header>
+
+        <!-- Login Admin -->
+        <div id="loginBox" class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-xl font-semibold mb-4 text-gray-700">Login Admin</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
+                    <input type="text" id="loginUser" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="loginPass" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Masuk</button>
+                <p id="loginMsg" class="text-sm text-red-600 hidden"></p>
+            </div>
+        </div>
+
+        <div id="adminPanel" class="hidden">
+            <!-- Form Tambah Konten -->
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Tambah Postingan Baru</h2>
+                <form id="postForm" class="space-y-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Judul</label>
+                        <input type="text" id="title" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Konten</label>
+                        <textarea id="content" rows="4" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Simpan &amp; Publish</button>
+                </form>
+            </div>
+
+            <!-- Daftar Semua Konten -->
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700">Semua Postingan</h2>
+                <div id="postsList" class="space-y-4">
+                    <p class="text-gray-500">Memuat data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Kredensial admin disimpan sementara di sessionStorage (HTTP Basic)
+        let cred = sessionStorage.getItem('adminCred') || null;
+
+        const loginBox = document.getElementById('loginBox');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginMsg = document.getElementById('loginMsg');
+
+        function authHeaders() {
+            return cred ? { 'Authorization': 'Basic ' + cred } : {};
+        }
+
+        function showLogin(message) {
+            cred = null;
+            sessionStorage.removeItem('adminCred');
+            loginBox.classList.remove('hidden');
+            adminPanel.classList.add('hidden');
+            if (message) {
+                loginMsg.textContent = message;
+                loginMsg.classList.remove('hidden');
+            }
+        }
+
+        function showPanel() {
+            loginBox.classList.add('hidden');
+            adminPanel.classList.remove('hidden');
+            loginMsg.classList.add('hidden');
+            fetchPosts();
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            if (!user || !pass) {
+                loginMsg.textContent = 'Username dan password wajib diisi.';
+                loginMsg.classList.remove('hidden');
+                return;
+            }
+            cred = btoa(user + ':' + pass);
+            // Tes kredensial dengan memuat daftar admin
+            fetch('/api/admin/posts', { headers: authHeaders() }).then(r => {
+                if (r.status === 401) {
+                    showLogin('Username atau password salah.');
+                } else if (r.status === 503) {
+                    r.json().then(j => showLogin(j.error || 'Area admin belum aktif. Set ADMIN_USER dan ADMIN_PASSWORD.'));
+                } else {
+                    sessionStorage.setItem('adminCred', cred);
+                    showPanel();
+                }
+            }).catch(() => showLogin('Gagal terhubung ke server.'));
+        });
+
+        function escapeHtml(text) {
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        async function fetchPosts() {
+            const container = document.getElementById('postsList');
+            try {
+                const response = await fetch('/api/admin/posts', { headers: authHeaders() });
+                if (response.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+                const data = await response.json();
+                if (!Array.isArray(data)) throw new Error(data.error || ('HTTP ' + response.status));
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">Belum ada postingan.</p>';
+                    return;
+                }
+
+                container.innerHTML = data.map(post => `
+                    <div class="border-b pb-4 mb-4">
+                        <h3 class="text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
+                        <p class="text-gray-600 mt-1">${escapeHtml(post.content)}</p>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="text-xs ${post.published === true ? 'text-green-600' : 'text-yellow-600'}">
+                                ${post.published === true ? 'Terpublikasi' : 'Belum dipublish'}
+                            </span>
+                            <button data-id="${post.id}" data-next="${post.published === true ? 'false' : 'true'}"
+                                class="toggleBtn text-xs px-3 py-1 rounded ${post.published === true ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'} text-white">
+                                ${post.published === true ? 'Unpublish' : 'Publish'}
+                            </button>
+                            <span class="text-xs text-gray-400">Dibuat: ${new Date(post.createdAt).toLocaleString()}</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.querySelectorAll('.toggleBtn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        btn.disabled = true;
+                        try {
+                            const res = await fetch('/api/posts/' + btn.dataset.id, {
+                                method: 'PATCH',
+                                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                                body: JSON.stringify({ published: btn.dataset.next === 'true' })
+                            });
+                            if (res.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+                            if (!res.ok) {
+                                let msg = 'HTTP ' + res.status;
+                                try { const j = await res.json(); if (j.error) msg = j.error; } catch (_) {}
+                                alert('Gagal mengubah status: ' + msg);
+                            }
+                            fetchPosts();
+                        } finally {
+                            btn.disabled = false;
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Gagal memuat daftar:', error);
+                container.innerHTML = `<p class="text-red-600">Gagal memuat data: ${escapeHtml(String(error.message || error))}</p>`;
+            }
+        }
+
+        document.getElementById('postForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            const response = await fetch('/api/posts', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+                body: JSON.stringify({ title, content })
+            });
+
+            if (response.ok) {
+                document.getElementById('postForm').reset();
+                fetchPosts();
+            } else if (response.status === 401) {
+                showLogin('Sesi berakhir. Silakan masuk ulang.');
+            } else if (response.status === 503) {
+                const j = await response.json().catch(() => ({}));
+                showLogin(j.error || 'Area admin belum aktif: set ADMIN_USER dan ADMIN_PASSWORD di environment variables.');
+            } else {
+                let msg = 'HTTP ' + response.status;
+                try { const j = await response.json(); if (j.error) msg = j.error; } catch (_) {}
+                alert('Gagal menyimpan postingan: ' + msg);
+            }
+        });
+
+        // Masuk otomatis bila kredensial masih tersimpan di session ini
+        if (cred) {
+            fetch('/api/admin/posts', { headers: authHeaders() }).then(r => {
+                if (r.ok) showPanel();
+                else showLogin(null);
+            });
+        }
+    </script>
+</body>
+</html>

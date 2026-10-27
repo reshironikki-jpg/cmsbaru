@@ -27,6 +27,34 @@ if (!admin.apps.length) {
 
 const db = admin.firestore();
 
+// ==== Autentikasi Admin (HTTP Basic) ====
+// Set ADMIN_USER dan ADMIN_PASSWORD di environment variables (.env lokal / Vercel)
+// untuk mengaktifkan area admin. Semua route tulis & route admin dilindungi ini.
+function requireAdmin(req, res, next) {
+  const user = process.env.ADMIN_USER;
+  const pass = process.env.ADMIN_PASSWORD;
+  if (!user || !pass) {
+    return res.status(503).json({ error: 'Area admin belum aktif: set ADMIN_USER dan ADMIN_PASSWORD di environment variables' });
+  }
+  const header = req.headers.authorization || '';
+  const m = header.match(/^Basic (.+)$/);
+  let ok = false;
+  if (m) {
+    try {
+      const decoded = Buffer.from(m[1], 'base64').toString('utf8');
+      const idx = decoded.indexOf(':');
+      const u = decoded.slice(0, idx);
+      const p = decoded.slice(idx + 1);
+      ok = u === user && p === pass;
+    } catch (_) { ok = false; }
+  }
+  if (!ok) {
+    res.setHeader('WWW-Authenticate', 'Basic realm="Admin area"');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 // Middleware untuk menyajikan file statis dari folder 'public' (agar index.html bisa diakses di root '/')
 // HTML dilayani tanpa cache supaya browser selalu memuat versi frontend terbaru
 app.use(express.static(path.join(__dirname, '../public'), {
@@ -63,9 +91,12 @@ function ppt(pk) {
   info.push(pk.includes('\\n') ? 'teks-\\n ada' : 'teks-\\n: tidak');
   return info.join('; ');
 }
-app.get('/api/posts', async (req, res) => {
+app.get('/api/posts', async (req, res) => {  // Publik: hanya postingan yang sudah dipublish
   try {
-    const snapshot = await db.collection('posts').orderBy('createdAt', 'desc').get();
+    const snapshot = await db.collection('posts')
+      .where('published', '==', true)
+      .orderBy('createdAt', 'desc')
+      .get();
     const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     res.status(200).json(posts);
   } catch (error) {
@@ -74,18 +105,48 @@ app.get('/api/posts', async (req, res) => {
   }
 });
 
-// Route Contoh: Menambah Konten Baru
-app.post('/api/posts', async (req, res) => {
+// Admin: daftar SEMUA postingan (termasuk yang belum dipublish)
+app.get('/api/admin/posts', requireAdmin, async (req, res) => {
+  try {
+    const snapshot = await db.collection('posts').orderBy('createdAt', 'desc').get();
+    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.status(200).json(posts);
+  } catch (error) {
+    console.error('GET /api/admin/posts gagal:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route Contoh: Menambah Konten Baru (khusus admin)
+app.post('/api/posts', requireAdmin, async (req, res) => {
   try {
     const { title, content } = req.body;
     if (!title || !content) {
       return res.status(400).json({ error: 'Judul dan konten wajib diisi' });
     }
-    const newPost = { title, content, createdAt: new Date().toISOString() };
+    const newPost = { title, content, published: true, createdAt: new Date().toISOString() };
     const docRef = await db.collection('posts').add(newPost);
     res.status(201).json({ id: docRef.id, ...newPost });
   } catch (error) {
     console.error('POST /api/posts gagal:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: set/unset status publikasi sebuah postingan
+app.patch('/api/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    const { published } = req.body;
+    if (typeof published !== 'boolean') {
+      return res.status(400).json({ error: 'Body harus berisi "published": true atau false' });
+    }
+    await db.collection('posts').doc(req.params.id).update({ published });
+    res.status(200).json({ id: req.params.id, published });
+  } catch (error) {
+    console.error('PATCH /api/posts gagal:', error);
+    if (error && error.code === 5) {  // not found
+      return res.status(404).json({ error: 'Postingan tidak ditemukan' });
+    }
     res.status(500).json({ error: error.message });
   }
 });
