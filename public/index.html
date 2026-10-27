@@ -43,17 +43,21 @@
     <script>
         // Fungsi untuk mengambil dan merender postingan
         async function fetchPosts() {
+            const container = document.getElementById('postsList');
             try {
                 const response = await fetch('/api/posts');
-                const posts = await response.json();
-                const container = document.getElementById('postsList');
-                
-                if (posts.length === 0) {
+                const data = await response.json();
+
+                // API bisa mengembalikan { error: ... } saat gagal (bukan array)
+                if (!Array.isArray(data)) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+                if (data.length === 0) {
                     container.innerHTML = '<p class="text-gray-500">Belum ada postingan.</p>';
                     return;
                 }
 
-                container.innerHTML = posts.map(post => `
+                container.innerHTML = data.map(post => `
                     <div class="border-b pb-4 mb-4">
                         <h3 class="text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
                         <p class="text-gray-600 mt-1">${escapeHtml(post.content)}</p>
@@ -62,6 +66,7 @@
                 `).join('');
             } catch (error) {
                 console.error('Gagal memuat post:', error);
+                container.innerHTML = `<p class="text-red-600">Gagal memuat data: ${escapeHtml(String(error.message || error))}</p>`;
             }
         }
 
