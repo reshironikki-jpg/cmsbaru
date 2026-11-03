@@ -135,20 +135,118 @@ app.post('/api/posts', requireAdmin, async (req, res) => {
   }
 });
 
-// Admin: set/unset status publikasi sebuah postingan
+// Admin: update sebuah postingan (title/content/published — bebas kombinasi)
 app.patch('/api/posts/:id', requireAdmin, async (req, res) => {
   try {
-    const { published } = req.body;
-    if (typeof published !== 'boolean') {
-      return res.status(400).json({ error: 'Body harus berisi "published": true atau false' });
+    const body = req.body || {};
+    const update = {};
+    if (typeof body.published === 'boolean') update.published = body.published;
+    if (typeof body.title === 'string' && body.title.trim()) update.title = body.title.trim();
+    if (typeof body.content === 'string' && body.content.trim()) update.content = body.content.trim();
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: 'Body harus berisi "published": true/false dan/atau "title" dan/atau "content"' });
     }
-    await db.collection('posts').doc(req.params.id).update({ published });
-    res.status(200).json({ id: req.params.id, published });
+    await db.collection('posts').doc(req.params.id).update(update);
+    res.status(200).json({ id: req.params.id, ...update });
   } catch (error) {
     console.error('PATCH /api/posts gagal:', error);
     if (error && error.code === 5) {  // not found
       return res.status(404).json({ error: 'Postingan tidak ditemukan' });
     }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: hapus sebuah postingan
+app.delete('/api/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    await db.collection('posts').doc(req.params.id).delete();
+    res.status(200).json({ id: req.params.id, deleted: true });
+  } catch (error) {
+    console.error('DELETE /api/posts gagal:', error);
+    if (error && error.code === 5) {  // not found
+      return res.status(404).json({ error: 'Postingan tidak ditemukan' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==== Auto Generate Content (100% LOKAL — TANPA API kunci) ====
+// Menghasilkan judul dan artikel dari topik dengan kombinasi template kalimat bahasa
+// Indonesia. Semuanya jalan di server tanpa layanan eksternal, jadi tidak butuh
+// environment variable apa pun.
+
+// Pembantu pemilihan acak sederhana
+const pick1 = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const pickSome = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
+const cap1 = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
+const TITLE_TEMPLATES = [
+  (t) => cap1(t) + ': Panduan Lengkap untuk Pemula',
+  (t) => 'Mengenal ' + t + ': Manfaat, Tips, dan Penjelasannya',
+  (t) => cap1(t) + ' — Hal Penting yang Perlu Anda Tahu',
+  (t) => 'Tips Praktis seputar ' + t + ' yang Mudah Dipraktikkan',
+  (t) => 'Apa Itu ' + t + '? Penjelasan Singkat dan Lengkapnya',
+  (t) => cap1(t) + ': Dari Dasar Sampai Poin Lanjutan',
+  (t) => 'Hal yang Sering Salah Dipahami tentang ' + t,
+];
+
+const INTRO_TEMPLATES = [
+  (t) => cap1(t) + ' sedang menjadi salah satu topik yang paling banyak dibicarakan belakangan ini — dan memang layak, karena penerapannya dapat dirasakan langsung dalam keseharian. Artikel ini merangkum hal-hal penting seputar ' + t + ' dengan bahasa yang mudah dipahami.',
+  (t) => 'Banyak orang mulai tertarik dengan ' + t + ' karena manfaatnya terasa nyata, baik bagi diri sendiri maupun lingkungan sekitar. Tulisan ini hadir sebagai panduan ringkas yang membantu Anda memahami ' + t + ' dari dasar.',
+  (t) => 'Jika Anda pernah bertanya-tanya tentang ' + t + ', Anda berada di tempat yang tepat. Artikel berikut membahas definisi, manfaat, dan langkah praktisnya secara terstruktur — tanpa peristilahan berlebihan.',
+];
+
+const BODY_TEMPLATES = [
+  (t) => 'Hal mendasar yang perlu dipahami tentang ' + t + ' adalah bahwa konsistensi jauh lebih menentukan hasil daripada berangkat dengan modal besar. Banyak praktisi yang memulai dari hal kecil, lalu mengembangkannya secara bertahap sesuai kebutuhan.',
+  (t) => 'Dalam praktiknya, penerapan ' + t + ' tidak selalu rumit. Biasanya cukup dimulai dengan tiga langkah: menentukan tujuan yang jelas, menyiapkan alat dan waktu yang memadai, serta mengevaluasi hasil secara rutin agar bisa disesuaikan di tengah jalan.',
+  (t) => 'Ada dua sudut pandang yang sering muncul ketika membahas ' + t + '. Pandangan yang pertama menekankan fleksibilitas — mengikuti arah yang paling sesuai dengan kondisi masing-masing. Pandangan kedua menekankan kerangka kerja yang terukur agar kemajuan bisa dipantau secara objektif.',
+  (t) => 'Kesalahan paling umum yang terjadi adalah terlalu bersemangat di awal kemudian berhenti sebelum terbentuk kebiasaan. Solusinya cukup sederhana: bagi proses seputar ' + t + ' menjadi target kecil yang bisa dicapai setiap minggu.',
+  (t) => 'Sumber belajar seputar ' + t + ' kini sangat beragam, mulai dari tulisan di internet, video, hingga komunitas yang berbagi pengalaman secara terbuka. Manfaatkan semua ini untuk mempercepat pemahaman Anda.',
+  (t) => 'Dari sisi hasil, mereka yang tekun menekuni ' + t + ' umumnya melihat perubahan yang signifikan dalam hitungan minggu hingga bulan. Patience menjadi kunci — karena perubahan besar jarang terjadi dalam semalam.',
+  (t) => 'Poin penting lainnya adalah menjaga keseimbangan: usahakan praktik yang sehat dan berkelanjutan, jangan lelah berlebihan, serta tetap terbuka terhadap umpan balik agar penyempurnaan berjalan terus.',
+  (t) => 'Ketika teknik dasar sudah kuat, Anda bisa mengeksplorasi variasi lanjutan seputar ' + t + '. Ini membuat pengalaman tetap segar dan mendorong Anda menuju tingkat berikutnya.',
+];
+
+const POINT_TEMPLATES = [
+  (t) => 'Definisi dan cakupan dasar ' + t + ' yang perlu dipahami lebih dahulu',
+  (t) => 'Manfaat utama ' + t + ' dalam praktik sehari-hari',
+  (t) => 'Kesalahan umum yang sebaiknya dihindari dari awal',
+  (t) => 'Langkah pertama yang mudah dipraktikkan mulai hari ini',
+  (t) => 'Indikator kemajuan untuk memantau perkembangan Anda',
+  (t) => 'Sumber belajar dan komunitas yang layak diikuti',
+];
+
+const CLOSING_TEMPLATES = [
+  (t) => 'Kesimpulannya, ' + t + ' bukan hal yang harus dianggap sulit — cukup dimulai dari langkah kecil, dilakukan secara rutin, lalu terbuka untuk perbaikan sepanjang jalan.',
+  (t) => 'Pada akhirnya, yang menentukan dari penerapan ' + t + ' adalah konsistensi dan kemauan untuk terus belajar. Mulailah sekarang, sesuaikan seiring berjalan, dan nikmati prosesnya.',
+  (t) => 'Dengan pemahaman yang tepat dan langkah yang terarah, ' + t + ' bisa menjadi kebiasaan positif yang memberi dampak dalam jangka panjang.',
+];
+
+function generateTitle(topic) {
+  return pick1(TITLE_TEMPLATES)(topic);
+}
+
+function generateArticle(topic) {
+  const intro = pick1(INTRO_TEMPLATES)(topic);
+  const points = pickSome(POINT_TEMPLATES, 4).map(p => '- ' + p(topic)).join('\n');
+  const bodies = pickSome(BODY_TEMPLATES, 3).map(b => b(topic)).join('\n\n');
+  const closing = pick1(CLOSING_TEMPLATES)(topic);
+  return [intro, 'Beberapa poin penting yang patut dicatat:\n\n' + points, bodies, closing].join('\n\n');
+}
+
+app.post('/api/generate', requireAdmin, async (req, res) => {
+  try {
+    const body = req.body || {};
+    const topic = typeof body.topic === 'string' ? body.topic.trim() : '';
+    const kind = body.kind === 'title' ? 'title' : 'article';
+    if (!topic) {
+      return res.status(400).json({ error: 'Isi dulu topiknya, misalnya: manfaat membaca buku' });
+    }
+    const text = kind === 'title' ? generateTitle(topic) : generateArticle(topic);
+    res.status(200).json({ text });
+  } catch (error) {
+    console.error('POST /api/generate gagal:', error);
     res.status(500).json({ error: error.message });
   }
 });

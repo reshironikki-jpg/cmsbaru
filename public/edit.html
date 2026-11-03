@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor — Faruq CMS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cyber: ['"Fira Code", "Courier New", monospace'] },
+                    colors: {
+                        neon: { cyan: '#06b6d4', purple: '#7c3aed', pink: '#ec4899' }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body { background: #050508; background-image: radial-gradient(circle at 10% 10%, rgba(6,182,212,0.08), transparent 35%), radial-gradient(circle at 90% 20%, rgba(124,58,237,0.08), transparent 40%), radial-gradient(circle at 50% 90%, rgba(236,72,153,0.06), transparent 50%); }
+        ::selection { background: #06b6d4; color: #050508; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050508; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #06b6d4, #7c3aed); }
+    </style>
+</head>
+<body class="min-h-screen bg-[#050508] font-mono tracking-wider text-gray-200 antialiased overflow-x-hidden">
+
+    <div class="relative px-6 max-w-6xl mx-auto pt-12 pb-16">
+
+        <!-- Top bar -->
+        <div class="flex items-center justify-between mb-12 flex-wrap gap-4">
+            <div>
+                <div class="text-[10px] text-cyan-400/60 tracking-[0.3em] mb-1">// FARUQ_CMS :: EDITOR DENGAN AUTO GENERATE</div>
+                <h1 class="text-3xl sm:text-4xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500">EDITOR FARUQ</h1>
+                <p class="text-xs text-purple-300/70 mt-2 tracking-widest">// tulis manual atau biarkan generator mengisi dulu</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="/" class="group inline-flex items-center gap-2 bg-gradient-to-r from-cyan-900/80 to-purple-900/80 border border-cyan-400/30 px-5 py-2 text-cyan-100 text-sm tracking-widest font-semibold rounded-lg transition hover:shadow-[0_0_20px_5px_rgba(6,182,212,0.3)]">VIEWER</a>
+                <a href="/admin.html" class="group inline-flex items-center gap-2 bg-gradient-to-r from-purple-900/80 to-pink-900/80 border border-purple-400/30 px-5 py-2 text-purple-100 text-sm tracking-widest font-semibold rounded-lg transition hover:shadow-[0_0_20px_5px_rgba(124,58,237,0.3)]">ADMIN</a>
+            </div>
+        </div>
+
+        <!-- LOGIN -->
+        <div id="loginBox" class="relative max-w-md mx-auto">
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-pink-500 to-purple-600 rounded-xl blur opacity-30"></div>
+            <div class="relative bg-[#0a0a0f] border border-cyan-500/40 rounded-xl shadow-[0_0_35px_3px_rgba(6,182,212,0.15)] p-8">
+                <h2 class="text-xl font-bold text-pink-200 border-l-4 border-pink-500 pl-4 tracking-wide mb-5">LOGIN</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Username</label>
+                        <input type="text" id="loginUser" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Password</label>
+                        <input type="password" id="loginPass" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                    </div>
+                    <div class="pt-1">
+                        <button id="loginBtn" class="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-sm tracking-widest font-bold rounded-lg py-3 transition shadow-[0_0_18px_2px_rgba(236,72,153,0.4)]">MASUK &gt;</button>
+                    </div>
+                    <p id="loginMsg" class="text-xs text-pink-300 hidden"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDITOR -->
+        <div id="editorPanel" class="hidden">
+            <!-- Panel Auto Generate Content -->
+            <div class="relative mb-10">
+                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-xl blur opacity-25"></div>
+                <div class="relative bg-[#0a0a0f] border border-purple-500/40 rounded-xl shadow-[0_0_30px_2px_rgba(124,58,237,0.15)] p-8">
+                    <div class="flex items-center justify-between mb-5 flex-wrap gap-2">
+                        <h2 class="text-xl font-bold text-cyan-100 border-l-4 border-cyan-400 pl-4 tracking-wide">Auto Generate Content</h2>
+                        <div class="text-[10px] text-purple-300/60">&gt; TANPA API — 100% LOKAL <span class="text-cyan-400 animate-pulse">*</span></div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Topik untuk generator (mis. manfaat membaca buku)</label>
+                            <input type="text" id="genTopic" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                        </div>
+                        <div class="flex gap-3 flex-wrap">
+                            <button id="genTitleBtn" class="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white text-xs tracking-widest font-bold rounded-lg px-5 py-3 transition shadow-[0_0_16px_2px_rgba(6,182,212,0.35)] border border-cyan-400/30">GENERATE JUDUL &gt;</button>
+                            <button id="genArticleBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white text-xs tracking-widest font-bold rounded-lg px-5 py-3 transition shadow-[0_0_16px_2px_rgba(124,58,237,0.35)] border border-purple-400/30">GENERATE ARTIKEL &gt;</button>
+                        </div>
+                        <p id="genMsg" class="text-xs text-cyan-300"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form tulis/edit -->
+            <div class="relative mb-12">
+                <div class="absolute -inset-1 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-xl blur opacity-20"></div>
+                <div class="relative bg-[#0a0a0f] border border-cyan-500/40 rounded-xl shadow-[0_0_30px_2px_rgba(6,182,212,0.12)] p-8">
+                    <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+                        <h2 id="formTitle" class="text-xl font-bold text-pink-200 border-l-4 border-pink-500 pl-4 tracking-wide">Tulis Postingan Baru</h2>
+                        <button id="clearEditBtn" class="text-[10px] text-cyan-300/70 hover:text-cyan-200 hidden">[ x ] keluar dari mode edit</button>
+                    </div>
+                    <form id="postForm" class="space-y-5">
+                        <div>
+                            <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Judul</label>
+                            <input type="text" id="title" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Konten</label>
+                            <textarea id="content" rows="10" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm leading-relaxed placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full"></textarea>
+                        </div>
+                        <label class="inline-flex items-center gap-3 cursor-pointer select-none">
+                            <input type="checkbox" id="published" checked class="w-4 h-4 accent-pink-500">
+                            <span class="text-xs uppercase tracking-widest text-cyan-300">Terpublikasi di halaman publik</span>
+                        </label>
+                        <div>
+                            <button type="submit" id="submitBtn" class="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white text-sm tracking-widest font-bold rounded-lg px-6 py-3 transition shadow-[0_0_18px_2px_rgba(6,182,212,0.4)] border border-cyan-400/30">SIMPAN &gt;</button>
+                        </div>
+                        <p id="formMsg" class="text-xs text-pink-300 hidden"></p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Daftar semua postingan -->
+            <div class="relative">
+                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-xl blur opacity-20"></div>
+                <div class="relative bg-[#0a0a0f] border border-purple-500/40 rounded-xl shadow-[0_0_30px_2px_rgba(124,58,237,0.12)] p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-cyan-100 border-l-4 border-cyan-400 pl-4 tracking-wide">Semua Postingan</h2>
+                        <div class="text-[10px] text-purple-300/60">&gt; MANAGE</div>
+                    </div>
+                    <div id="postsList" class="space-y-4">
+                        <p class="text-cyan-200 text-sm animate-pulse">MEMUAT DATA...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Kredensial admin (HTTP Basic) dipakai bersama dengan admin.html
+        let cred = sessionStorage.getItem('adminCred') || null;
+        let editingId = null; // id postingan yang sedang diedit (null = buat baru)
+
+        const loginBox = document.getElementById('loginBox');
+        const editorPanel = document.getElementById('editorPanel');
+        const loginMsg = document.getElementById('loginMsg');
+        const formMsg = document.getElementById('formMsg');
+        const genMsg = document.getElementById('genMsg');
+
+        function authHeaders(extra) {
+            const h = Object.assign({}, extra || {});
+            if (cred) h['Authorization'] = 'Basic ' + cred;
+            return h;
+        }
+
+        function escapeHtml(text) {
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function showLogin(message) {
+            cred = null;
+            sessionStorage.removeItem('adminCred');
+            loginBox.classList.remove('hidden');
+            editorPanel.classList.add('hidden');
+            if (message) { loginMsg.textContent = message; loginMsg.classList.remove('hidden'); }
+        }
+
+        function showPanel() {
+            loginBox.classList.add('hidden');
+            editorPanel.classList.remove('hidden');
+            loginMsg.classList.add('hidden');
+            fetchPosts();
+        }
+
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            const user = document.getElementById('loginUser').value;
+            const pass = document.getElementById('loginPass').value;
+            if (!user || !pass) {
+                loginMsg.textContent = 'Username dan password wajib diisi.';
+                loginMsg.classList.remove('hidden');
+                return;
+            }
+            cred = btoa(user + ':' + pass);
+            fetch('/api/admin/posts', { headers: authHeaders() }).then(r => {
+                if (r.status === 401) showLogin('Username atau password salah.');
+                else if (r.status === 503) r.json().then(j => showLogin(j.error || 'Area admin belum aktif.'));
+                else { sessionStorage.setItem('adminCred', cred); showPanel(); }
+            }).catch(() => showLogin('Gagal terhubung ke server.'));
+        });
+
+        // Daftar semua postingan (mode editor: bisa edit & hapus)
+        async function fetchPosts() {
+            const container = document.getElementById('postsList');
+            try {
+                const response = await fetch('/api/admin/posts', { headers: authHeaders() });
+                if (response.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+                const data = await response.json();
+                if (!Array.isArray(data)) throw new Error(data.error || ('HTTP ' + response.status));
+
+                if (data.length === 0) {
+                    container.innerHTML = '<p class="text-cyan-200 text-sm">BELUM ADA POSTINGAN.</p>';
+                } else {
+                    container.innerHTML = data.map(post => `
+                        <div class="relative group bg-[#050508] border border-cyan-900/40 rounded-lg p-5 transition-shadow hover:shadow-[0_0_16px_2px_rgba(124,58,237,0.15)] ${editingId === post.id ? 'border-pink-500/60 shadow-[0_0_16px_2px_rgba(236,72,153,0.2)]' : ''}">
+                            <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                                <h3 class="text-base font-bold text-cyan-100 tracking-wide">${escapeHtml(post.title)}</h3>
+                                <span class="text-[10px] px-2 py-1 rounded border ${post.published === true ? 'border-cyan-400/40 text-cyan-300 bg-cyan-400/10' : 'border-yellow-500/40 text-yellow-300 bg-yellow-500/10'}">${post.published === true ? 'ONLINE' : 'DRAFT'}</span>
+                            </div>
+                            <p class="text-sm text-gray-300 leading-relaxed mb-3 whitespace-pre-line">${escapeHtml(String(post.content).slice(0, 160))}${String(post.content).length > 160 ? '…' : ''}</p>
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <span class="text-[11px] text-cyan-400/60">Dibuat: ${new Date(post.createdAt).toLocaleString()}</span>
+                                <div class="flex gap-2">
+                                    <button data-id="${post.id}" class="editBtn text-xs px-4 py-2 rounded font-bold tracking-widest transition bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white border border-cyan-400/30">EDIT &gt;</button>
+                                    <button data-id="${post.id}" class="deleteBtn text-xs px-4 py-2 rounded font-bold tracking-widest transition bg-red-900/80 hover:bg-red-700 text-red-100 border border-red-500/40">HAPUS</button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    container.querySelectorAll('.editBtn').forEach(b => b.addEventListener('click', () => loadPost(b.dataset.id)));
+                    container.querySelectorAll('.deleteBtn').forEach(b => b.addEventListener('click', () => deletePost(b.dataset.id)));
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="text-red-400 text-sm">!!! ERROR: ${escapeHtml(String(error.message || error))}</p>`;
+            }
+        }
+
+        // ==== Auto Generate Content (server lokal, tanpa API apapun) ====
+        async function generate(kind) {
+            const topic = document.getElementById('genTopic').value.trim();
+            genMsg.className = 'text-xs text-cyan-300';
+            genMsg.textContent = 'Menyusun ' + (kind === 'title' ? 'judul' : 'artikel') + ' dari topik "' + topic + '"...';
+            try {
+                const res = await fetch('/api/generate', {
+                    method: 'POST',
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ topic, kind })
+                });
+                if (res.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+                const data = await res.json();
+                if (!res.ok) { throw new Error(data.error || ('HTTP ' + res.status)); }
+                if (kind === 'title') {
+                    document.getElementById('title').value = data.text;
+                    if (!document.getElementById('content').value.trim() && editingId === null) {
+                        // artikel belum ada? langsung generate juga supaya langsung siap tayang
+                        genMsg.textContent = 'Judul diisi. Menyusun artikel otomatis juga...';
+                        await generateSilent('article');
+                    }
+                } else {
+                    document.getElementById('content').value = data.text;
+                }
+                genMsg.className = 'text-xs text-cyan-200';
+                genMsg.textContent = 'Selesai diisi. Periksa dan sunting dulu bila perlu, lalu SIMPAN.';
+            } catch (error) {
+                genMsg.className = 'text-xs text-pink-300';
+                genMsg.textContent = '!!! ' + String(error.message || error);
+            }
+        }
+        // generate tanpa mengubah pesan (dipanggil internal)
+        async function generateSilent(kind) {
+            const topic = document.getElementById('genTopic').value.trim();
+            const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ topic, kind })
+            });
+            const data = await res.json();
+            if (res.ok && kind === 'article') document.getElementById('content').value = data.text;
+        }
+
+        document.getElementById('genTitleBtn').addEventListener('click', () => generate('title'));
+        document.getElementById('genArticleBtn').addEventListener('click', () => generate('article'));
+
+        // Muat postingan ke form untuk diedit
+        let allPostsCache = [];
+        async function loadPost(id) {
+            if (allPostsCache.length === 0) {
+                const response = await fetch('/api/admin/posts', { headers: authHeaders() });
+                if (response.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+                allPostsCache = await response.json();
+            }
+            const post = allPostsCache.find(p => p.id === id);
+            if (!post) return;
+            editingId = id;
+            document.getElementById('title').value = post.title;
+            document.getElementById('content').value = post.content;
+            document.getElementById('published').checked = post.published === true;
+            document.getElementById('formTitle').textContent = 'Edit Postingan: ' + post.title;
+            document.getElementById('clearEditBtn').classList.remove('hidden');
+            document.getElementById('submitBtn').textContent = 'SIMPAN PERUBAHAN >';
+            fetchPosts();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function exitEditMode() {
+            editingId = null;
+            allPostsCache = [];
+            document.getElementById('postForm').reset();
+            document.getElementById('published').checked = true;
+            document.getElementById('formTitle').textContent = 'Tulis Postingan Baru';
+            document.getElementById('clearEditBtn').classList.add('hidden');
+            document.getElementById('submitBtn').textContent = 'SIMPAN >';
+            fetchPosts();
+        }
+        document.getElementById('clearEditBtn').addEventListener('click', exitEditMode);
+
+        // Simpan (buat baru atau update)
+        document.getElementById('postForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('title').value.trim(),
+                content: document.getElementById('content').value.trim(),
+                published: document.getElementById('published').checked
+            };
+            if (!payload.title || !payload.content) {
+                formMsg.textContent = 'Judul dan konten wajib diisi.';
+                formMsg.classList.remove('hidden');
+                return;
+            }
+            formMsg.classList.add('hidden');
+            try {
+                const res = editingId
+                    ? await fetch('/api/posts/' + editingId, { method: 'PATCH', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) })
+                    : await fetch('/api/posts', { method: 'POST', headers: authHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify(payload) });
+                if (res.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+                if (!res.ok) {
+                    const j = await res.json().catch(() => ({}));
+                    throw new Error(j.error || ('HTTP ' + res.status));
+                }
+                exitEditMode();
+            } catch (error) {
+                formMsg.textContent = '!!! ' + String(error.message || error);
+                formMsg.classList.remove('hidden');
+            }
+        });
+
+        // Hapus postingan
+        async function deletePost(id) {
+            const post = allPostsCache.find(p => p.id === id);
+            if (!confirm('Hapus postingan "' + (post ? post.title : id) + '"?')) return;
+            const res = await fetch('/api/posts/' + id, { method: 'DELETE', headers: authHeaders() });
+            if (res.status === 401) { showLogin('Sesi berakhir. Silakan masuk ulang.'); return; }
+            if (!res.ok) {
+                const j = await res.json().catch(() => ({}));
+                alert('Gagal menghapus: ' + (j.error || ('HTTP ' + res.status)));
+            }
+            if (editingId === id) exitEditMode(); else fetchPosts();
+        }
+
+        // Masuk otomatis bila kredensial masih tersimpan di session ini
+        if (cred) {
+            fetch('/api/admin/posts', { headers: authHeaders() }).then(r => {
+                if (r.ok) showPanel();
+                else showLogin(null);
+            });
+        }
+    </script>
+</body>
+</html>
