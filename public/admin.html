@@ -5,57 +5,103 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Node.js CMS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { cyber: ['"Fira Code", "Courier New", monospace'] },
+                    colors: {
+                        neon: {
+                            cyan: '#06b6d4',
+                            purple: '#7c3aed',
+                            pink: '#ec4899'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body { background: #050508; background-image: radial-gradient(circle at 10% 10%, rgba(236,72,153,0.08), transparent 35%), radial-gradient(circle at 90% 20%, rgba(6,182,212,0.08), transparent 40%), radial-gradient(circle at 50% 90%, rgba(124,58,237,0.08), transparent 50%); }
+        ::selection { background: #ec4899; color: #050508; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #050508; }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #7c3aed, #ec4899); }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal">
+<body class="min-h-screen bg-[#050508] font-mono tracking-wider text-gray-200 antialiased overflow-x-hidden">
 
-    <div class="container mx-auto p-6 max-w-4xl">
-        <header class="mb-8 flex justify-between items-center">
+    <div class="relative px-6 max-w-5xl mx-auto pt-12 pb-16">
+
+        <!-- Top bar -->
+        <div class="flex items-center justify-between mb-12">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">Area Admin</h1>
-                <p class="text-gray-600">Kelola dan atur publikasi postingan</p>
+                <div class="text-[10px] text-cyan-400/60 tracking-[0.3em] mb-1">// AREA ADMIN //</div>
+                <h1 class="text-4xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400">ADMIN TERMINAL</h1>
+                <p class="text-xs text-purple-300/70 mt-2 tracking-widest">// kelola &amp; atur publikasi postingan</p>
             </div>
-            <a href="/" class="text-sm bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 transition">Lihat Halaman Publik</a>
-        </header>
+            <a href="/" class="group inline-flex items-center gap-2 bg-gradient-to-r from-cyan-900/80 to-purple-900/80 border border-cyan-400/30 px-5 py-2 text-cyan-100 text-sm tracking-widest font-semibold rounded-lg transition hover:shadow-[0_0_20px_5px_rgba(6,182,212,0.3)]">
+                <span class="text-cyan-300">&gt;</span> VIEWER
+            </a>
+        </div>
 
-        <!-- Login Admin -->
-        <div id="loginBox" class="bg-white p-6 rounded-lg shadow-md mb-8">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">Login Admin</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Username</label>
-                    <input type="text" id="loginUser" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <!-- Login -->
+        <div id="loginBox" class="relative">
+            <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-pink-500 to-purple-600 rounded-xl blur opacity-30"></div>
+            <div class="relative bg-[#0a0a0f] border border-cyan-500/40 rounded-xl shadow-[0_0_35px_3px_rgba(6,182,212,0.15)] p-8">
+                <h2 class="text-xl font-bold text-pink-200 border-l-4 border-pink-500 pl-4 tracking-wide mb-5">LOGIN</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Username</label>
+                        <input type="text" id="loginUser" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Password</label>
+                        <input type="password" id="loginPass" class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                    </div>
+                    <div class="pt-1">
+                        <button id="loginBtn" class="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white text-sm tracking-widest font-bold rounded-lg py-3 transition shadow-[0_0_18px_2px_rgba(236,72,153,0.4)]">MASUK &gt;</button>
+                    </div>
+                    <p id="loginMsg" class="text-xs text-pink-300 hidden"></p>
                 </div>
-                <div>
-                    <label class="block text-gray-700 text-sm font-bold mb-2">Password</label>
-                    <input type="password" id="loginPass" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Masuk</button>
-                <p id="loginMsg" class="text-sm text-red-600 hidden"></p>
             </div>
         </div>
 
+        <!-- Admin panel -->
         <div id="adminPanel" class="hidden">
-            <!-- Form Tambah Konten -->
-            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">Tambah Postingan Baru</h2>
-                <form id="postForm" class="space-y-4">
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Judul</label>
-                        <input type="text" id="title" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Form -->
+            <div class="relative mb-12">
+                <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 via-purple-500 to-pink-500 rounded-xl blur opacity-25"></div>
+                <div class="relative bg-[#0a0a0f] border border-purple-500/40 rounded-xl shadow-[0_0_30px_2px_rgba(124,58,237,0.15)] p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-cyan-100 border-l-4 border-cyan-400 pl-4 tracking-wide">Tambah Postingan Baru</h2>
+                        <div class="text-[10px] text-purple-300/60">&gt; CREATE <span class="text-cyan-400 animate-pulse">*</span></div>
                     </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Konten</label>
-                        <textarea id="content" rows="4" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                    </div>
-                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Simpan &amp; Publish</button>
-                </form>
+                    <form id="postForm" class="space-y-5">
+                        <div>
+                            <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Judul</label>
+                            <input type="text" id="title" required class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full">
+                        </div>
+                        <div>
+                            <label class="text-[11px] text-cyan-400/70 uppercase tracking-wider mb-2 block">Konten</label>
+                            <textarea id="content" rows="4" required class="bg-[#050508] border border-cyan-900/60 rounded-lg px-4 py-3 text-cyan-100 text-sm placeholder:text-cyan-900 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/40 w-full"></textarea>
+                        </div>
+                        <button type="submit" class="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white text-sm tracking-widest font-bold rounded-lg px-6 py-3 transition shadow-[0_0_18px_2px_rgba(6,182,212,0.4)] border border-cyan-400/30">SIMPAN &amp; PUBLISH &gt;</button>
+                    </form>
+                </div>
             </div>
 
-            <!-- Daftar Semua Konten -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h2 class="text-xl font-semibold mb-4 text-gray-700">Semua Postingan</h2>
-                <div id="postsList" class="space-y-4">
-                    <p class="text-gray-500">Memuat data...</p>
+            <!-- Daftar semua postingan -->
+            <div class="relative">
+                <div class="absolute -inset-1 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 rounded-xl blur opacity-20"></div>
+                <div class="relative bg-[#0a0a0f] border border-pink-500/40 rounded-xl shadow-[0_0_30px_2px_rgba(236,72,153,0.12)] p-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-pink-200 border-l-4 border-pink-500 pl-4 tracking-wide">Semua Postingan</h2>
+                        <div class="text-[10px] text-purple-300/60">&gt; MANAGE</div>
+                    </div>
+                    <div id="postsList" class="space-y-4">
+                        <p class="text-cyan-200 text-sm animate-pulse">MEMUAT DATA...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -126,23 +172,25 @@
                 if (!Array.isArray(data)) throw new Error(data.error || ('HTTP ' + response.status));
 
                 if (data.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500">Belum ada postingan.</p>';
+                    container.innerHTML = '<p class="text-cyan-200 text-sm">BELUM ADA POSTINGAN.</p>';
                     return;
                 }
 
                 container.innerHTML = data.map(post => `
-                    <div class="border-b pb-4 mb-4">
-                        <h3 class="text-lg font-bold text-gray-800">${escapeHtml(post.title)}</h3>
-                        <p class="text-gray-600 mt-1">${escapeHtml(post.content)}</p>
-                        <div class="flex items-center gap-3 mt-2">
-                            <span class="text-xs ${post.published === true ? 'text-green-600' : 'text-yellow-600'}">
-                                ${post.published === true ? 'Terpublikasi' : 'Belum dipublish'}
+                    <div class="relative group bg-[#050508] border border-cyan-900/40 rounded-lg p-5 transition-shadow hover:shadow-[0_0_16px_2px_rgba(236,72,153,0.15)]">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-base font-bold text-cyan-100 tracking-wide">${escapeHtml(post.title)}</h3>
+                            <span class="text-[10px] px-2 py-1 rounded border ${post.published === true ? 'border-cyan-400/40 text-cyan-300 bg-cyan-400/10' : 'border-yellow-500/40 text-yellow-300 bg-yellow-500/10'}">
+                                ${post.published === true ? 'ONLINE' : 'DRAFT'}
                             </span>
+                        </div>
+                        <p class="text-sm text-gray-300 leading-relaxed mb-3">${escapeHtml(post.content)}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-[11px] text-cyan-400/60">Dibuat: ${new Date(post.createdAt).toLocaleString()}</span>
                             <button data-id="${post.id}" data-next="${post.published === true ? 'false' : 'true'}"
-                                class="toggleBtn text-xs px-3 py-1 rounded ${post.published === true ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'} text-white">
-                                ${post.published === true ? 'Unpublish' : 'Publish'}
+                                class="toggleBtn text-xs px-4 py-2 rounded font-bold tracking-widest transition ${post.published === true ? 'bg-yellow-600/80 hover:bg-yellow-500 text-white' : 'bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white shadow-[0_0_12px_2px_rgba(6,182,212,0.35)]'}">
+                                ${post.published === true ? 'UNPUBLISH' : 'PUBLISH &gt;'}
                             </button>
-                            <span class="text-xs text-gray-400">Dibuat: ${new Date(post.createdAt).toLocaleString()}</span>
                         </div>
                     </div>
                 `).join('');
@@ -170,7 +218,7 @@
                 });
             } catch (error) {
                 console.error('Gagal memuat daftar:', error);
-                container.innerHTML = `<p class="text-red-600">Gagal memuat data: ${escapeHtml(String(error.message || error))}</p>`;
+                container.innerHTML = `<p class="text-red-400 text-sm">!!! ERROR: ${escapeHtml(String(error.message || error))}</p>`;
             }
         }
 
