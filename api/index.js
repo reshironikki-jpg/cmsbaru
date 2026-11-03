@@ -93,11 +93,13 @@ function ppt(pk) {
 }
 app.get('/api/posts', async (req, res) => {  // Publik: hanya postingan yang sudah dipublish
   try {
+    // Filter di Firestore lalu urutkan di kode: menghindari kebutuhan composite index
     const snapshot = await db.collection('posts')
       .where('published', '==', true)
-      .orderBy('createdAt', 'desc')
       .get();
-    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const posts = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
     res.status(200).json(posts);
   } catch (error) {
     console.error('GET /api/posts gagal:', error);
